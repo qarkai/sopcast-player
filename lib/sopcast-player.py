@@ -23,6 +23,7 @@ import locale
 import math
 import sys
 import os
+import argparse
 
 import gobject
 import gtk
@@ -793,24 +794,22 @@ class pySopCast(object):
 
 
 if __name__ == '__main__':
-    def print_usage_and_exit():
-        print("Usage: sopcast-player [SOP_ADDRESS] [IN-BOUND_PORT OUT-BOUND_PORT]")
+    def valid_sop(s):
+        if s[:len("sop://".lower())] == "sop://".lower():
+            return s
+        else:
+            raise argparse.ArgumentTypeError('Invalid address %s' % s)
+
+    parser = argparse.ArgumentParser(usage='sopcast-player [SOP_ADDRESS [IN-BOUND_PORT OUT-BOUND_PORT]]')
+    parser.add_argument('sop_addr', metavar='SOP_ADDRESS', nargs='?', type=valid_sop)
+    parser.add_argument('in_port', metavar='IN-BOUND_PORT', nargs='?', type=int)
+    parser.add_argument('out_port', metavar='OUT-BOUND_PORT', nargs='?', type=int)
+    args = parser.parse_args()
+
+    if (not args.in_port) != (not args.out_port):
+        print("Error: %s and %s must be used together." % ('IN-BOUND_PORT', 'OUT-BOUND_PORT'))
+        parser.print_usage()
         sys.exit(1)
 
-
-    if len(sys.argv) > 1:
-        if len(sys.argv) == 2 and sys.argv[1][:len("sop://".lower())] == "sop://".lower():
-            pySop = pySopCast(sys.argv[1])
-            pySop.main()
-
-        elif len(sys.argv) == 4 and sys.argv[1][:len("sop://".lower())] == "sop://".lower():
-            try:
-                pySop = pySopCast(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]))
-                pySop.main()
-            except ValueError:
-                print_usage_and_exit()
-        else:
-            print_usage_and_exit()
-    else:
-        pySop = pySopCast()
-        pySop.main()
+    pySop = pySopCast(args.sop_addr, args.in_port, args.out_port)
+    pySop.main()
